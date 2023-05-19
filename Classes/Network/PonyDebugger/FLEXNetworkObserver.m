@@ -474,7 +474,7 @@ static FIRDocumentReference * _logos_method$_ungrouped$FIRCollectionReference$ad
             @selector(URLSession:task:willPerformHTTPRedirection:newRequest:completionHandler:),
             @selector(URLSession:dataTask:didReceiveData:),
             @selector(URLSession:dataTask:didReceiveResponse:completionHandler:),
-            @selector(URLSession:task:didCompleteWithError:),
+            //@selector(URLSession:task:didCompleteWithError:),
             @selector(URLSession:dataTask:didBecomeDownloadTask:),
             @selector(URLSession:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:),
             @selector(URLSession:downloadTask:didFinishDownloadingToURL:)
@@ -563,7 +563,7 @@ static FIRDocumentReference * _logos_method$_ungrouped$FIRCollectionReference$ad
     [self injectTaskWillPerformHTTPRedirectionIntoDelegateClass:cls];
     [self injectTaskDidReceiveDataIntoDelegateClass:cls];
     [self injectTaskDidReceiveResponseIntoDelegateClass:cls];
-    [self injectTaskDidCompleteWithErrorIntoDelegateClass:cls];
+    //[self injectTaskDidCompleteWithErrorIntoDelegateClass:cls];
     [self injectRespondsToSelectorIntoDelegateClass:cls];
 
     // Data tasks
@@ -668,12 +668,14 @@ static FIRDocumentReference * _logos_method$_ungrouped$FIRCollectionReference$ad
         // parse the request, and cache them in advance. After that the HTTPParser
         // will be finalized. Make sure other threads inspecting the request
         // won't trigger a race to finalize the parser.
-        [slf.currentRequest HTTPBody];
+        @try {
+            [slf.currentRequest HTTPBody];
 
-        [FLEXNetworkObserver.sharedObserver URLSessionTaskWillResume:slf];
-        ((void(*)(id, SEL))objc_msgSend)(
-            slf, swizzledSelector
-        );
+            [FLEXNetworkObserver.sharedObserver URLSessionTaskWillResume:slf];
+            ((void(*)(id, SEL))objc_msgSend)(
+                slf, swizzledSelector
+            );
+        } @catch (NSException *exception) { }
     });
     
     class_addMethod(class, swizzledSelector, implementation, method_getTypeEncoding(originalResume));
