@@ -28,7 +28,7 @@ typedef NS_ENUM(NSUInteger, FLEXNetworkTransactionKind) {
 /// In general, it only makes sense to have one recorder for the entire application.
 @property (nonatomic, readonly, class) FLEXNetworkRecorder *defaultRecorder;
 
-/// Defaults to 25 MB if never set. Values set here are persisted across launches of the app.
+/// Defaults to 50 MB if never set. Values set here are persisted across launches of the app.
 @property (nonatomic) NSUInteger responseCacheByteLimit;
 
 /// If NO, the recorder not cache will not cache response for content types

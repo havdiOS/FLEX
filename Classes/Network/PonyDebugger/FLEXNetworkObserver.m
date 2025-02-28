@@ -663,6 +663,7 @@ static FIRDocumentReference * _logos_method$_ungrouped$FIRCollectionReference$ad
 }
 
 + (void)swizzleResumeSelector:(SEL)selector forClass:(Class)class {
+    @try {
     SEL swizzledSelector = [FLEXUtility swizzledSelectorForSelector:selector];
     Method originalResume = class_getInstanceMethod(class, selector);
     IMP implementation = imp_implementationWithBlock(^(NSURLSessionTask *slf) {
@@ -691,6 +692,7 @@ static FIRDocumentReference * _logos_method$_ungrouped$FIRCollectionReference$ad
     class_addMethod(class, swizzledSelector, implementation, method_getTypeEncoding(originalResume));
     Method newResume = class_getInstanceMethod(class, swizzledSelector);
     method_exchangeImplementations(originalResume, newResume);
+    } @catch (NSException *exception) { }
 }
 
 + (void)injectIntoNSURLConnectionAsynchronousClassMethod {
@@ -1429,6 +1431,7 @@ static FIRDocumentReference * _logos_method$_ungrouped$FIRCollectionReference$ad
 }
 
 + (void)injectTaskDidCompleteWithErrorIntoDelegateClass:(Class)cls {
+    @try {
     SEL selector = @selector(URLSession:task:didCompleteWithError:);
     SEL swizzledSelector = [FLEXUtility swizzledSelectorForSelector:selector];
     
@@ -1470,6 +1473,7 @@ static FIRDocumentReference * _logos_method$_ungrouped$FIRCollectionReference$ad
         implementationBlock:implementationBlock
         undefinedBlock:undefinedBlock
     ];
+    } @catch (NSException *exception) { }
 }
 
 // Used for overriding AFNetworking behavior
@@ -1923,6 +1927,7 @@ didBecomeDownloadTask:(NSURLSessionDownloadTask *)downloadTask
 didCompleteWithError:(NSError *)error
           delegate:(id<NSURLSessionDelegate>)delegate {
     [self performBlock:^{
+        @try {
         NSString *requestID = [[self class] requestIDForConnectionOrTask:task];
         FLEXInternalRequestState *requestState = [self requestStateForRequestID:requestID];
 
@@ -1938,6 +1943,7 @@ didCompleteWithError:(NSError *)error
         }
 
         [self removeRequestStateForRequestID:requestID];
+        } @catch (NSException *exception) { }
     }];
 }
 

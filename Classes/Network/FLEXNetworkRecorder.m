@@ -49,9 +49,17 @@ NSString *const kFLEXNetworkRecorderResponseCacheLimitDefaultsKey = @"com.flex.r
             objectForKey:kFLEXNetworkRecorderResponseCacheLimitDefaultsKey] unsignedIntegerValue
         ];
         
-        // Default to 25 MB max. The cache will purge earlier if there is memory pressure.
-        self.restCache.totalCostLimit = responseCacheLimit ?: 25 * 1024 * 1024;
-        [self.restCache setTotalCostLimit:responseCacheLimit];
+        // Default to 50 MB max. The cache will purge earlier if there is memory pressure.
+        if([NSUserDefaults.standardUserDefaults objectForKey:kFLEXNetworkRecorderResponseCacheLimitDefaultsKey] != nil) {
+            NSUInteger responseCacheLimit = [[NSUserDefaults.standardUserDefaults
+                objectForKey:kFLEXNetworkRecorderResponseCacheLimitDefaultsKey] unsignedIntegerValue
+            ];
+            self.restCache.totalCostLimit = responseCacheLimit ?: 50 * 1024 * 1024;
+            [self.restCache setTotalCostLimit:responseCacheLimit];
+        } else {
+            self.restCache.totalCostLimit = 50 * 1024 * 1024;
+            [self.restCache setTotalCostLimit:50 * 1024 * 1024];
+        }
         
         self.orderedWSTransactions = [NSMutableArray new];
         self.orderedHTTPTransactions = [NSMutableArray new];
