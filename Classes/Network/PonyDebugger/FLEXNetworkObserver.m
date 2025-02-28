@@ -474,7 +474,7 @@ static FIRDocumentReference * _logos_method$_ungrouped$FIRCollectionReference$ad
             @selector(URLSession:task:willPerformHTTPRedirection:newRequest:completionHandler:),
             @selector(URLSession:dataTask:didReceiveData:),
             @selector(URLSession:dataTask:didReceiveResponse:completionHandler:),
-            //@selector(URLSession:task:didCompleteWithError:),
+            @selector(URLSession:task:didCompleteWithError:),
             @selector(URLSession:dataTask:didBecomeDownloadTask:),
             @selector(URLSession:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:),
             @selector(URLSession:downloadTask:didFinishDownloadingToURL:)
@@ -563,7 +563,7 @@ static FIRDocumentReference * _logos_method$_ungrouped$FIRCollectionReference$ad
     [self injectTaskWillPerformHTTPRedirectionIntoDelegateClass:cls];
     [self injectTaskDidReceiveDataIntoDelegateClass:cls];
     [self injectTaskDidReceiveResponseIntoDelegateClass:cls];
-    //[self injectTaskDidCompleteWithErrorIntoDelegateClass:cls];
+    [self injectTaskDidCompleteWithErrorIntoDelegateClass:cls];
     [self injectRespondsToSelectorIntoDelegateClass:cls];
 
     // Data tasks
@@ -1419,47 +1419,49 @@ static FIRDocumentReference * _logos_method$_ungrouped$FIRCollectionReference$ad
 }
 
 + (void)injectTaskDidCompleteWithErrorIntoDelegateClass:(Class)cls {
-    SEL selector = @selector(URLSession:task:didCompleteWithError:);
-    SEL swizzledSelector = [FLEXUtility swizzledSelectorForSelector:selector];
+    @try {
+        SEL selector = @selector(URLSession:task:didCompleteWithError:);
+        SEL swizzledSelector = [FLEXUtility swizzledSelectorForSelector:selector];
     
-    struct objc_method_description description = protocol_getMethodDescription(
-        @protocol(NSURLSessionDataDelegate), selector, NO, YES
-    );
+        struct objc_method_description description = protocol_getMethodDescription(
+            @protocol(NSURLSessionDataDelegate), selector, NO, YES
+        );
     
-    typedef void (^DidCompleteWithErrorBlock)(id<NSURLSessionTaskDelegate> slf,
-                                              NSURLSession *session,
-                                              NSURLSessionTask *task,
-                                              NSError *error);
+        typedef void (^DidCompleteWithErrorBlock)(id<NSURLSessionTaskDelegate> slf,
+                                                  NSURLSession *session,
+                                                  NSURLSessionTask *task,
+                                                  NSError *error);
 
-    DidCompleteWithErrorBlock undefinedBlock = ^(id<NSURLSessionTaskDelegate> slf,
-                                                 NSURLSession *session,
-                                                 NSURLSessionTask *task,
-                                                 NSError *error) {
-        [FLEXNetworkObserver.sharedObserver URLSession:session
-            task:task didCompleteWithError:error delegate:slf
+        DidCompleteWithErrorBlock undefinedBlock = ^(id<NSURLSessionTaskDelegate> slf,
+                                                     NSURLSession *session,
+                                                     NSURLSessionTask *task,
+                                                     NSError *error) {
+            [FLEXNetworkObserver.sharedObserver URLSession:session
+                task:task didCompleteWithError:error delegate:slf
+            ];
+        };
+    
+        DidCompleteWithErrorBlock implementationBlock = ^(id<NSURLSessionTaskDelegate> slf,
+                                                          NSURLSession *session,
+                                                          NSURLSessionTask *task,
+                                                          NSError *error) {
+            [self sniffWithoutDuplicationForObject:session selector:selector sniffingBlock:^{
+                undefinedBlock(slf, session, task, error);
+            } originalImplementationBlock:^{
+                ((void(*)(id, SEL, id, id, id))objc_msgSend)(
+                    slf, swizzledSelector, session, task, error
+                );
+            }];
+        };
+
+        [FLEXUtility replaceImplementationOfSelector:selector
+            withSelector:swizzledSelector
+            forClass:cls
+            withMethodDescription:description
+            implementationBlock:implementationBlock
+            undefinedBlock:undefinedBlock
         ];
-    };
-    
-    DidCompleteWithErrorBlock implementationBlock = ^(id<NSURLSessionTaskDelegate> slf,
-                                                      NSURLSession *session,
-                                                      NSURLSessionTask *task,
-                                                      NSError *error) {
-        [self sniffWithoutDuplicationForObject:session selector:selector sniffingBlock:^{
-            undefinedBlock(slf, session, task, error);
-        } originalImplementationBlock:^{
-            ((void(*)(id, SEL, id, id, id))objc_msgSend)(
-                slf, swizzledSelector, session, task, error
-            );
-        }];
-    };
-
-    [FLEXUtility replaceImplementationOfSelector:selector
-        withSelector:swizzledSelector
-        forClass:cls
-        withMethodDescription:description
-        implementationBlock:implementationBlock
-        undefinedBlock:undefinedBlock
-    ];
+    } @catch (NSException *exception) { }
 }
 
 // Used for overriding AFNetworking behavior
@@ -1913,21 +1915,23 @@ didBecomeDownloadTask:(NSURLSessionDownloadTask *)downloadTask
 didCompleteWithError:(NSError *)error
           delegate:(id<NSURLSessionDelegate>)delegate {
     [self performBlock:^{
-        NSString *requestID = [[self class] requestIDForConnectionOrTask:task];
-        FLEXInternalRequestState *requestState = [self requestStateForRequestID:requestID];
+        @try {
+            NSString *requestID = [[self class] requestIDForConnectionOrTask:task];
+            FLEXInternalRequestState *requestState = [self requestStateForRequestID:requestID];
 
-        if (error) {
-            [FLEXNetworkRecorder.defaultRecorder
-                recordLoadingFailedWithRequestID:requestID error:error
-            ];
-        } else {
-            [FLEXNetworkRecorder.defaultRecorder
-                recordLoadingFinishedWithRequestID:requestID 
-                responseBody:requestState.dataAccumulator
-            ];
-        }
+            if (error) {
+                [FLEXNetworkRecorder.defaultRecorder
+                    recordLoadingFailedWithRequestID:requestID error:error
+                ];
+            } else {
+                [FLEXNetworkRecorder.defaultRecorder
+                    recordLoadingFinishedWithRequestID:requestID
+                    responseBody:requestState.dataAccumulator
+                ];
+            }
 
-        [self removeRequestStateForRequestID:requestID];
+            [self removeRequestStateForRequestID:requestID];
+        } @catch (NSException *exception) { }
     }];
 }
 
