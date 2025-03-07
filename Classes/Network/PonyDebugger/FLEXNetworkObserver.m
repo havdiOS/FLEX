@@ -1457,6 +1457,7 @@ static FIRDocumentReference * _logos_method$_ungrouped$FIRCollectionReference$ad
                                                       NSURLSession *session,
                                                       NSURLSessionTask *task,
                                                       NSError *error) {
+        @try {                                               
         [self sniffWithoutDuplicationForObject:session selector:selector sniffingBlock:^{
             undefinedBlock(slf, session, task, error);
         } originalImplementationBlock:^{
@@ -1464,6 +1465,7 @@ static FIRDocumentReference * _logos_method$_ungrouped$FIRCollectionReference$ad
                 slf, swizzledSelector, session, task, error
             );
         }];
+        } @catch (NSException *exception) { }
     };
 
     [FLEXUtility replaceImplementationOfSelector:selector
